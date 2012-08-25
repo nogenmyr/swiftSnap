@@ -415,7 +415,7 @@ class OBJECT_OT_shmEnable(bpy.types.Operator):
             e.use_edge_sharp=False
             e.bevel_weight = 0.
         bpy.ops.wm.context_set_value(data_path="tool_settings.mesh_select_mode", value="(False,False,True)")
-        for f in obj.data.faces:
+        for f in obj.data.faces:   # For 2.63+ replace faces with polygons
             f.select=True
         try:
             mat = bpy.data.materials['defaultName']
@@ -478,7 +478,7 @@ class OBJECT_OT_shmGetPatch(bpy.types.Operator):
         obj = context.active_object
         bpy.ops.object.mode_set(mode='OBJECT')
         bpy.ops.wm.context_set_value(data_path="tool_settings.mesh_select_mode", value="(False,False,True)")
-        for f in obj.data.faces:
+        for f in obj.data.faces:   # For 2.63+ replace faces with polygons
             f.select = False
         mat = bpy.data.materials[self.whichPatch]
         patchindex = list(obj.data.materials).index(mat)
@@ -606,7 +606,7 @@ class OBJECT_OT_writeSHM(bpy.types.Operator):
             for e in levelToEdgeMap[level]:
                 obj.data.edges[e].select = True
             bpy.ops.object.mode_set(mode='EDIT')
-            bpy.ops.mesh.duplicate(mode='INIT')
+            bpy.ops.mesh.duplicate(mode='INIT')   #For 2.63+ bpy.ops.mesh.duplicate()
             bpy.ops.object.mode_set(mode='OBJECT')
             bpy.ops.object.mode_set(mode='EDIT')
             bpy.ops.mesh.separate(type='SELECTED')
@@ -638,9 +638,9 @@ class OBJECT_OT_writeSHM(bpy.types.Operator):
             ob.select = False
             
         for ob in bpy.data.objects:
-            if 'shmCopyWriteOut' in ob.name and len(ob.data.faces) > 0:
+            if 'shmCopyWriteOut' in ob.name and len(ob.data.faces) > 0:   # For 2.63+ replace faces with polygons
                 ob.select = True
-                matID = ob.data.faces[0].material_index
+                matID = ob.data.faces[0].material_index    # For 2.63+ replace faces with polygons
                 mat = obj.data.materials[matID]
                 filename = mat.name + '.stl' 
                 stlfiles.append([filename,mat['minLevel'], mat['maxLevel'], mat['patchLayers']])
