@@ -127,7 +127,7 @@ def initshmProperties():
     bpy.types.Scene.featAngle = FloatProperty(
         name = "featureAngle", 
         description = "Feature angle",
-        default = 150.0,
+        default = 30.0,
         min = 0.)
         
     bpy.types.Scene.resFloat = FloatProperty(
