@@ -178,7 +178,7 @@ def defaultSettingsCastMesh():
 def defaultSettingsLayers():
     return """
     relativeSizes true;
-    expansionRatio 1.0;
+    expansionRatio 1.25;
     finalLayerThickness 0.3;
     minThickness 0.25;
     nGrow 0;
