@@ -25,7 +25,7 @@ bl_info = {
     "location": "Tool Shelf",
     "description": "Writes snappyHexMeshDict from a Blender object",
     "warning": "not much tested yet",
-    "wiki_url": "None",
+    "wiki_url": "http://openfoamwiki.net/index.php/SwiftSnap",
     "tracker_url": "",
     "support": 'COMMUNITY',
     "category": "OpenFOAM"}
@@ -328,9 +328,9 @@ class OBJECT_OT_FeatureSel(bpy.types.Operator):
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.wm.context_set_value(data_path="tool_settings.mesh_select_mode", value="(False,True,False)")
         bpy.ops.mesh.select_all(action='DESELECT')
-        bpy.ops.mesh.edges_select_sharp(sharpness=scn.featAngle*3.1416/180)
+        bpy.ops.mesh.edges_select_sharp(sharpness=scn.featAngle*3.141592653589793/180)
         return {'FINISHED'}
-    
+
 class OBJECT_OT_FeatureMark(bpy.types.Operator):
     '''Marks selected edges as feature lines'''
     bl_idname = "mark.feature"
@@ -383,6 +383,8 @@ class OBJECT_OT_FeatureShow(bpy.types.Operator):
     def execute(self, context):
         obj = context.active_object
         scn = context.scene
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_all(action='DESELECT')
         bpy.ops.object.mode_set(mode='OBJECT')
         bpy.ops.wm.context_set_value(data_path="tool_settings.mesh_select_mode", value="(False,True,False)")
 
@@ -413,7 +415,7 @@ class OBJECT_OT_shmEnable(bpy.types.Operator):
             e.use_edge_sharp=False
             e.bevel_weight = 0.
         bpy.ops.wm.context_set_value(data_path="tool_settings.mesh_select_mode", value="(False,False,True)")
-        for f in obj.data.polygons:   # For 2.63+ replace faces with polygons
+        for f in obj.data.polygons:
             f.select=True
         try:
             mat = bpy.data.materials['defaultName']
@@ -474,9 +476,11 @@ class OBJECT_OT_shmGetPatch(bpy.types.Operator):
     def execute(self, context):
         scn = context.scene
         obj = context.active_object
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_all(action='DESELECT')
         bpy.ops.object.mode_set(mode='OBJECT')
         bpy.ops.wm.context_set_value(data_path="tool_settings.mesh_select_mode", value="(False,False,True)")
-        for f in obj.data.polygons:   # For 2.63+ replace faces with polygons
+        for f in obj.data.polygons:
             f.select = False
         mat = bpy.data.materials[self.whichPatch]
         patchindex = list(obj.data.materials).index(mat)
@@ -555,6 +559,7 @@ class OBJECT_OT_writeSHM(bpy.types.Operator):
         geoobj['distributeFiles'] = self.distributeFiles 
 
         bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY', center='MEDIAN')
         for ob in bpy.data.objects:
             ob.select = False
             
@@ -595,6 +600,10 @@ class OBJECT_OT_writeSHM(bpy.types.Operator):
         obj.name = 'edgemesh'
         levelToEdgeMap = {}
 
+        bpy.ops.object.mode_set(mode='EDIT')
+        bpy.ops.mesh.select_all(action='DESELECT')
+        bpy.ops.object.mode_set(mode='OBJECT')
+
         for e in obj.data.edges:
             if e.use_edge_sharp:
                 e.select = False
@@ -610,7 +619,7 @@ class OBJECT_OT_writeSHM(bpy.types.Operator):
             for e in levelToEdgeMap[level]:
                 obj.data.edges[e].select = True
             bpy.ops.object.mode_set(mode='EDIT')
-            bpy.ops.mesh.duplicate()   #For 2.63+ bpy.ops.mesh.duplicate()
+            bpy.ops.mesh.duplicate()
             bpy.ops.object.mode_set(mode='OBJECT')
             bpy.ops.object.mode_set(mode='EDIT')
             bpy.ops.mesh.separate(type='SELECTED')
@@ -642,9 +651,9 @@ class OBJECT_OT_writeSHM(bpy.types.Operator):
             ob.select = False
             
         for ob in bpy.data.objects:
-            if 'shmCopyWriteOut' in ob.name and len(ob.data.polygons) > 0:   # For 2.63+ replace faces with polygons
+            if 'shmCopyWriteOut' in ob.name and len(ob.data.polygons) > 0:
                 ob.select = True
-                matID = ob.data.polygons[0].material_index    # For 2.63+ replace faces with polygons
+                matID = ob.data.polygons[0].material_index
                 mat = obj.data.materials[matID]
                 filename = mat.name + '.stl' 
                 stlfiles.append([filename,mat['minLevel'], mat['maxLevel'], mat['patchLayers']])
