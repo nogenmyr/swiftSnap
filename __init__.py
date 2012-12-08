@@ -184,7 +184,7 @@ class RSUIPanel(bpy.types.Panel):
             col.prop(scn, 'snap')
             col = split.column()
             col.prop(scn, 'lays')
-            layout.operator("set.locationinmesh")
+            layout.operator("set.locationinmesh", text="Set locationInMesh")
             box = layout.box()
             box.label(text='Feature settings')
             col = box.column(align=True)
@@ -295,13 +295,22 @@ class OBJECT_OT_UnsetRefRegObj(bpy.types.Operator):
 class OBJECT_OT_SetInsidePoint(bpy.types.Operator):
     '''Set the locationInMesh coordinate using the 3D cursor'''
     bl_idname = "set.locationinmesh"
-    bl_label = "Set locationInMesh"
+    bl_label = "Update locationInMesh. ESC to cancel"
 
     def execute(self, context):
         obj = context.active_object
-        obj['locinmesh'] = context.scene.cursor_location
+        obj['locinmesh'] = context.scene.cursor_location.copy()
         return {'FINISHED'}
-    
+        
+    def invoke(self, context, event):
+        context.window_manager.invoke_props_dialog(self, width=320)
+        return {'RUNNING_MODAL'} 
+         
+    def draw(self, context):
+        scn = context.scene
+        self.layout.label("Let snappyHexMesh mesh the volume containing the point:")
+        self.layout.prop(scn, "cursor_location", text='')
+        
 class OBJECT_OT_Nonmani(bpy.types.Operator):
     '''Finds and selects non-manifold edges'''
     bl_idname = "sel.nonmani"
