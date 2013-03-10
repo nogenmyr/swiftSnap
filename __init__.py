@@ -20,7 +20,7 @@ bl_info = {
     "name": "SwiftSnap",
     "author": "Karl-Johan Nogenmyr",
     "version": (0, 1),
-    "blender": (2, 6, 4),
+    "blender": (2, 6, 6),
     "api": 35622,
     "location": "Tool Shelf",
     "description": "Writes snappyHexMeshDict from a Blender object",
@@ -281,7 +281,7 @@ class OBJECT_OT_SetRefRegObj(bpy.types.Operator):
         return {'FINISHED'}
     
 class OBJECT_OT_UnsetRefRegObj(bpy.types.Operator):
-    '''Remove this refinement'''
+    '''Click to remove this refinement'''
     bl_idname = "remove.refine"
     bl_label = "Defined refinement region. Click to remove."
     
@@ -414,6 +414,8 @@ class OBJECT_OT_shmEnable(bpy.types.Operator):
         
         obj = context.active_object
         scn = context.scene
+        obj.data.use_customdata_edge_crease = True
+        obj.data.use_customdata_edge_bevel = True
 
         obj['swiftsnap'] = True
         obj['featLevels'] = {}
@@ -585,7 +587,7 @@ class OBJECT_OT_writeSHM(bpy.types.Operator):
                 bpy.ops.transform.resize(value=(sc,sc,sc))
                 bpy.data.objects[refreg].select = True
                 refobj.select = False
-                bpy.ops.export_mesh.stl(filepath=filenameandpath, check_existing=False, ascii=True, apply_modifiers=True)
+                bpy.ops.export_mesh.stl(filepath=filenameandpath, check_existing=False, ascii=True, use_mesh_modifiers=True)
                 bpy.ops.object.delete()
                 refobj.select = False
         except:
@@ -648,14 +650,12 @@ class OBJECT_OT_writeSHM(bpy.types.Operator):
         obj = bpy.data.objects['shmCopyWriteOut']
         obj.select = True
         bpy.context.scene.objects.active = obj
-        print('active',context.active_object.name)
         for v in obj.data.vertices:
             v.select=True
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.wm.context_set_value(data_path="tool_settings.mesh_select_mode", value="(False,False,True)")
         bpy.ops.mesh.separate(type='MATERIAL')
         bpy.ops.object.mode_set(mode='OBJECT')
-        print('objects', bpy.data.objects[:])
         for ob in bpy.data.objects:
             ob.select = False
             
@@ -667,7 +667,7 @@ class OBJECT_OT_writeSHM(bpy.types.Operator):
                 filename = mat.name + '.stl' 
                 stlfiles.append([filename,mat['minLevel'], mat['maxLevel'], mat['patchLayers']])
                 filenameandpath = os.path.join(pathtrisurface, filename)
-                bpy.ops.export_mesh.stl(filepath=filenameandpath, check_existing=False, ascii=True, apply_modifiers=True)
+                bpy.ops.export_mesh.stl(filepath=filenameandpath, check_existing=False, ascii=True, use_mesh_modifiers=True)
                 ob.select = False
                 
         for ob in bpy.data.objects:
