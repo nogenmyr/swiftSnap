@@ -534,7 +534,8 @@ class OBJECT_OT_writeSHM(bpy.types.Operator):
         items = [('stl', 'stl', 'Export geometry as triangulated surfaces in ASCII stl format'), 
                  ('obj', 'obj', 'Export geometry as Wavefront obj files')
                  ],
-        name = "Surface file type")
+        name = "Surface file type",
+        default = "obj")
 
     filepath = StringProperty(
             name="File Path",
