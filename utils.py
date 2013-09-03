@@ -22,7 +22,7 @@
 import mathutils
 import itertools
 
-def write(filename, obj, stlfiles, refinestls,eMeshfiles, cast, snap, lays, locinmesh):
+def write(filename, obj, surffiles, refinestls,eMeshfiles, cast, snap, lays, locinmesh, implicit):
 
     shmd = open(filename,'w')
     shmd.write(foamHeader('dictionary','snappyHexMeshDict'))
@@ -32,7 +32,7 @@ def write(filename, obj, stlfiles, refinestls,eMeshfiles, cast, snap, lays, loci
     shmd.write("addLayers       %s;\n"%str(lays).lower());
 
     shmd.write("\ngeometry\n{\n")
-    for stl in stlfiles:
+    for stl in surffiles:
         shmd.write("    " + stl[0] + "\n    {\n        type triSurfaceMesh;\n        name %s;\n    }\n"%stl[0][0:-4])
     for ref in refinestls:
         shmd.write("    " + ref[0] + "\n    {\n        type triSurfaceMesh;\n        name %s;\n    }\n"%ref[0][0:-4])
@@ -46,7 +46,7 @@ def write(filename, obj, stlfiles, refinestls,eMeshfiles, cast, snap, lays, loci
     shmd.write("    );\n")
 
     shmd.write("    refinementSurfaces\n    {\n")
-    for stl in stlfiles:
+    for stl in surffiles:
         min = stl[1]
         max = stl[2]
         shmd.write("        %s\n        {\n"%stl[0][0:-4])
@@ -67,10 +67,10 @@ def write(filename, obj, stlfiles, refinestls,eMeshfiles, cast, snap, lays, loci
         shmd.write("        }\n")
     shmd.write("    }\n")
     shmd.write("    locationInMesh ({} {} {});\n".format(*locinmesh))
-    shmd.write(defaultSettingsCastMesh())
+    shmd.write(defaultSettingsCastMesh().format(implicit[1]))
 
     shmd.write("\naddLayersControls\n{\n    layers\n    {\n")
-    for stl in stlfiles:
+    for stl in surffiles:
         patchname = stl[0][0:-4]
         patchlayers = stl[3]
         shmd.write("        \"%s.*\"\n        {\n            "%patchname)
@@ -79,9 +79,7 @@ def write(filename, obj, stlfiles, refinestls,eMeshfiles, cast, snap, lays, loci
 
     shmd.write(defaultSettingsLayers())
 
-
-
-    shmd.write(defaultSettings())
+    shmd.write(defaultSettings().format(str(implicit[0]).lower()))
     shmd.write("// ************************************************************************* //")
     shmd.close()
     return 0
@@ -130,16 +128,19 @@ FoamFile
 def defaultSettings():
     return """
 snapControls
-{
+{{
     nSmoothPatch 3;
     tolerance 1.0;
     nSolveIter 300;
     nRelaxIter 5;
     nFeatureSnapIter 10;
-}
+    implicitFeatureSnap {};
+    explicitFeatureSnap true;
+    multiRegionFeatureSnap false;
+}}
 
 meshQualityControls
-{
+{{
     maxNonOrtho 65;
     maxBoundarySkewness 20;
     maxInternalSkewness 4;
@@ -155,10 +156,10 @@ meshQualityControls
     nSmoothScale 4;
     errorReduction 0.75;
     relaxed
-    {
+    {{
         maxNonOrtho 75;
-    }
-}
+    }}
+}}
 
 debug 0;
 mergeTolerance 1E-6;
@@ -170,9 +171,9 @@ def defaultSettingsCastMesh():
     maxGlobalCells 2000000;
     minRefinementCells 0;
     nCellsBetweenLevels 1;
-    resolveFeatureAngle 30;
+    resolveFeatureAngle {};
     allowFreeStandingZoneFaces true;
-}
+}}
 """
 
 def defaultSettingsLayers():
@@ -183,6 +184,7 @@ def defaultSettingsLayers():
     minThickness 0.25;
     nGrow 0;
     featureAngle 30;
+    slipFeatureAngle 30;
     nRelaxIter 5;
     nSmoothSurfaceNormals 1;
     nSmoothNormals 3;
@@ -193,6 +195,7 @@ def defaultSettingsLayers():
     nBufferCellsNoExtrude 0;
     nLayerIter 50;
     nRelaxedIter 20;
+    nLayerIter 50;
 }
 """
 

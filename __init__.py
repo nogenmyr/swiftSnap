@@ -99,6 +99,11 @@ def initshmProperties():
         description = "Number of layers to grow at patch",
         min = 0)
 
+    bpy.types.Scene.impFeat = BoolProperty(
+        name = "Implicit features", 
+        description = "Should snappyHexMesh find features by itself?",
+        default = False)
+     
     bpy.types.Scene.featLevel = IntProperty(
         name = "Feat. level", 
         description = "Selects feature line refinement level",
@@ -186,7 +191,11 @@ class RSUIPanel(bpy.types.Panel):
             col.prop(scn, 'lays')
             layout.operator("set.locationinmesh", text="Set locationInMesh")
             box = layout.box()
-            box.label(text='Feature settings')
+            split = box.split()
+            col = split.column()
+            col.label(text='Feature settings')
+            col = split.column()
+            col.prop(scn, 'impFeat')
             col = box.column(align=True)
             col.operator("sel.nonmani")
             col.prop(scn, 'featAngle')
@@ -521,6 +530,12 @@ class OBJECT_OT_writeSHM(bpy.types.Operator):
                          description="Put triSurface dir in ../constant",
                          default=False)
 
+    surfaceFileType = EnumProperty(
+        items = [('stl', 'stl', 'Export geometry as triangulated surfaces in ASCII stl format'), 
+                 ('obj', 'obj', 'Export geometry as Wavefront obj files')
+                 ],
+        name = "Surface file type")
+
     filepath = StringProperty(
             name="File Path",
             description="Filepath used for exporting the file",
@@ -548,9 +563,10 @@ class OBJECT_OT_writeSHM(bpy.types.Operator):
         import imp
         imp.reload(utils)
         from . import blender_utils
+        from io_scene_obj import export_obj
         import os
         scn = context.scene
-        stlfiles = []
+        surffiles = []
         eMeshfiles = []
         refinefiles = []
         edgeMesh = {}
@@ -579,17 +595,25 @@ class OBJECT_OT_writeSHM(bpy.types.Operator):
             for refreg in geoobj['refreg']:
                 refobj = bpy.data.objects[refreg]
                 refobj.select = True
+                hideStatus = refobj.hide
+                refobj.hide = False
                 bpy.ops.object.origin_set(type='ORIGIN_CURSOR')  
-                filename = refreg + '.stl' 
+                filename = refreg + "." + self.surfaceFileType
+                
                 refinefiles.append([filename,geoobj['refreg'][refreg]['level'], geoobj['refreg'][refreg]['dist'], geoobj['refreg'][refreg]['inside']])
                 filenameandpath = os.path.join(pathtrisurface, filename)
                 bpy.ops.object.duplicate(linked=False, mode='INIT')
                 bpy.ops.transform.resize(value=(sc,sc,sc))
                 bpy.data.objects[refreg].select = True
                 refobj.select = False
-                bpy.ops.export_mesh.stl(filepath=filenameandpath, check_existing=False, ascii=True, use_mesh_modifiers=True)
+                print()
+                if self.surfaceFileType == 'stl':
+                    bpy.ops.export_mesh.stl(filepath=filenameandpath, check_existing=False, ascii=True, use_mesh_modifiers=True)
+                elif self.surfaceFileType == 'obj':
+                    export_obj.save(bpy.ops, bpy.context, filepath=filenameandpath, use_materials=False, use_selection=True)
                 bpy.ops.object.delete()
                 refobj.select = False
+                refobj.hide = hideStatus
         except:
             pass
             
@@ -664,18 +688,21 @@ class OBJECT_OT_writeSHM(bpy.types.Operator):
                 ob.select = True
                 matID = ob.data.polygons[0].material_index
                 mat = obj.data.materials[matID]
-                filename = mat.name + '.stl' 
-                stlfiles.append([filename,mat['minLevel'], mat['maxLevel'], mat['patchLayers']])
+                filename = mat.name + '.' + self.surfaceFileType 
+                surffiles.append([filename,mat['minLevel'], mat['maxLevel'], mat['patchLayers']])
                 filenameandpath = os.path.join(pathtrisurface, filename)
-                bpy.ops.export_mesh.stl(filepath=filenameandpath, check_existing=False, ascii=True, use_mesh_modifiers=True)
+                if self.surfaceFileType == 'stl':
+                    bpy.ops.export_mesh.stl(filepath=filenameandpath, check_existing=False, ascii=True, use_mesh_modifiers=True)
+                elif self.surfaceFileType == 'obj':
+                    export_obj.save(bpy.ops, bpy.context, filepath=filenameandpath, use_materials=False, use_selection=True)
                 ob.select = False
                 
         for ob in bpy.data.objects:
             if 'shmCopyWriteOut' in ob.name or 'edgemesh' in ob.name:
                 ob.select = True
                 bpy.ops.object.delete()
-
-        utils.write(self.filepath, obj, stlfiles, refinefiles, eMeshfiles, scn.cast, scn.snap, scn.lays, locinmesh)
+        implicit = [scn.impFeat, scn.featAngle]
+        utils.write(self.filepath, obj, surffiles, refinefiles, eMeshfiles, scn.cast, scn.snap, scn.lays, locinmesh, implicit)
         obj = bpy.data.objects[geoname]
         obj.select = True
         bpy.context.scene.objects.active = obj
