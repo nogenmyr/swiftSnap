@@ -47,10 +47,15 @@ def write(filename, obj, surffiles, refinestls,eMeshfiles, cast, snap, lays, loc
 
     shmd.write("    refinementSurfaces\n    {\n")
     for stl in surffiles:
-        min = stl[1]
-        max = stl[2]
+        pmin = stl[1]
+        pmax = stl[2]
+        ptype = stl[4]
         shmd.write("        %s\n        {\n"%stl[0][0:-4])
-        shmd.write("            level ({} {});\n".format(min,max))
+        shmd.write("            level ({} {});\n".format(pmin,pmax))
+        shmd.write("            patchInfo\n")
+        shmd.write("            {\n")
+        shmd.write("                type %s;\n"%ptype)
+        shmd.write("            }\n")
         shmd.write("        }\n")
     shmd.write("    }\n")
     shmd.write("    refinementRegions\n    {\n")

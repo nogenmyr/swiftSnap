@@ -151,6 +151,13 @@ def initshmProperties():
         description = "Name of object to use as refinement region",
         default = '')
 
+    bpy.types.Scene.bcTypeEnum = EnumProperty( # only types relevant for sHM listed. Know any more? contact me...
+        items = [('wall', 'wall', 'Defines the patch as wall'), 
+                 ('patch', 'patch', 'Defines the patch as generic patch'),
+                 ('cyclicAMI', 'cyclicAMI', 'Defines the patch as cyclicAMI')
+                 ],
+        name = "Patch type")
+    
     return
 
 
@@ -213,22 +220,21 @@ class RSUIPanel(bpy.types.Panel):
             box = layout.box()
             box.label(text="Patch settings")
             box.prop(scn, 'shmpatchName')
+            box.prop(scn, 'bcTypeEnum')
             row = box.row(align=True)
             row.prop(scn, 'patchMinLevel')
             row.prop(scn, 'patchMaxLevel')
             row = box.row(align=False)
             if scn.lays:
                 row.prop(scn, 'patchLayers')
-                row.operator("set.shmpatchname")
-            else:
-                row.operator("set.shmpatchname")
+            row.operator("set.shmpatchname")
             if scn.lays:
-                box.label(text="Color, min, max, name, layers")
+                box.label(text="Color, min, max, name, type, layers")
             else:
-                box.label(text="Color, min, max, name")
+                box.label(text="Color, min, max, name, type")
             for m in obj.data.materials:
                 try:
-                    textstr = '{}, {}, {}'.format(m['minLevel'],m['maxLevel'], m.name)
+                    textstr = '{}, {}, {}, {}'.format(m['minLevel'],m['maxLevel'], m.name, m['patchType'])
                     lays = str(m['patchLayers'])
                     if scn.lays:
                         textstr += ', ' + lays
@@ -449,6 +455,7 @@ class OBJECT_OT_shmEnable(bpy.types.Operator):
         mat['minLevel'] = scn.patchMinLevel
         mat['maxLevel'] = scn.patchMaxLevel
         mat['patchLayers'] = scn.patchLayers
+        mat['patchType'] = scn.bcTypeEnum
         bpy.ops.object.editmode_toggle()  
         bpy.ops.object.material_slot_assign()
         bpy.ops.object.editmode_toggle()  
@@ -482,6 +489,7 @@ class OBJECT_OT_shmSetPatchName(bpy.types.Operator):
         scn.patchMaxLevel = max(scn.patchMaxLevel, scn.patchMinLevel)
         mat['maxLevel'] = scn.patchMaxLevel
         mat['patchLayers'] = scn.patchLayers
+        mat['patchType'] = scn.bcTypeEnum
         bpy.ops.object.editmode_toggle()  
         bpy.ops.object.material_slot_assign()
         return {'FINISHED'}
@@ -510,6 +518,7 @@ class OBJECT_OT_shmGetPatch(bpy.types.Operator):
         scn.patchMinLevel = mat['minLevel']
         scn.patchMaxLevel =mat['maxLevel']
         scn.patchLayers = mat['patchLayers']
+        scn.bcTypeEnum = mat['patchType'] 
         scn.shmpatchName = self.whichPatch
         return {'FINISHED'}
 
@@ -690,7 +699,7 @@ class OBJECT_OT_writeSHM(bpy.types.Operator):
                 matID = ob.data.polygons[0].material_index
                 mat = obj.data.materials[matID]
                 filename = mat.name + '.' + self.surfaceFileType 
-                surffiles.append([filename,mat['minLevel'], mat['maxLevel'], mat['patchLayers']])
+                surffiles.append([filename,mat['minLevel'], mat['maxLevel'], mat['patchLayers'], mat['patchType']])
                 filenameandpath = os.path.join(pathtrisurface, filename)
                 if self.surfaceFileType == 'stl':
                     bpy.ops.export_mesh.stl(filepath=filenameandpath, check_existing=False, ascii=True, use_mesh_modifiers=True)
