@@ -692,9 +692,11 @@ class OBJECT_OT_writeSHM(bpy.types.Operator):
         bpy.ops.object.mode_set(mode='OBJECT')
         for ob in bpy.data.objects:
             ob.select = False
-            
+        
+        N = 0
         for ob in bpy.data.objects:
             if 'shmCopyWriteOut' in ob.name and len(ob.data.polygons) > 0:
+                N = N + 1
                 ob.select = True
                 matID = ob.data.polygons[0].material_index
                 mat = obj.data.materials[matID]
@@ -707,6 +709,63 @@ class OBJECT_OT_writeSHM(bpy.types.Operator):
                     export_obj.save(bpy.ops, bpy.context, filepath=filenameandpath, use_materials=False, use_selection=True)
                 ob.select = False
                 
+# EnGrid export start. Code from io_export_engrid.py written by Oliver Gloth (enGits GmbH)
+        split_quads = True
+        out = open(os.path.join(path, "engrid.begc"), "w")
+        out.write('%d\n' % N)
+        node_offset = 0    
+        for ob in bpy.data.objects:
+            if 'shmCopyWriteOut' in ob.name and len(ob.data.polygons) > 0:
+                ob.select = True
+                matID = ob.data.polygons[0].material_index
+                mat = obj.data.materials[matID]
+                out.write(mat.name)
+                out.write('\n') 
+                   
+        for ob in bpy.data.objects:
+            if 'shmCopyWriteOut' in ob.name and len(ob.data.polygons) > 0:
+                mesh = ob.data
+                mesh.update(calc_tessface=True)
+                M = ob.matrix_world
+                mesh.transform(M)
+                faces = mesh.tessfaces
+                nodes = mesh.vertices
+                out.write('%d' % len(nodes))
+                if split_quads:
+                   N = len(faces)
+                   for f in faces:
+                       if len(f.vertices) == 4:
+                           N = N + 1
+                   out.write(' %d\n' % N)
+                else:
+                    out.write(' %d\n' % len(faces))
+                for n in nodes:
+                    out.write("%e " % n.co[0])
+                    out.write("%e " % n.co[1])
+                    out.write("%e\n" % n.co[2])
+                for f in faces:
+                    N = len(f.vertices)
+                    if split_quads:
+                        if N != 4:
+                            out.write("%d" % len(f.vertices))
+                            for v in f.vertices:
+                                out.write(' %d' % (v + node_offset))
+                            out.write('\n')
+                        else:
+                            out.write('3 %d %d %d\n' % (f.vertices[0] + node_offset, f.vertices[1] + node_offset, f.vertices[2] + node_offset))
+                            out.write('3 %d %d %d\n' % (f.vertices[2] + node_offset, f.vertices[3] + node_offset, f.vertices[0] + node_offset))
+                    else:
+                        out.write("%d" % len(f.vertices))
+                        for v in f.vertices:
+                            out.write(' %d' % (v + node_offset))
+                        out.write('\n')
+                node_offset = node_offset + len(nodes)
+                M.invert()
+                mesh.transform(M)
+        out.flush()
+        out.close()
+# EnGrid export end
+
         for ob in bpy.data.objects:
             if 'shmCopyWriteOut' in ob.name or 'edgemesh' in ob.name:
                 ob.select = True
