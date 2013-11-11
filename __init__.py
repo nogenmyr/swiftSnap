@@ -427,6 +427,7 @@ class OBJECT_OT_shmEnable(bpy.types.Operator):
 # initializes an object    
     def execute(self, context):
         
+        bpy.ops.object.mode_set(mode='OBJECT')
         obj = context.active_object
         scn = context.scene
         obj.data.use_customdata_edge_crease = True
