@@ -700,8 +700,8 @@ class OBJECT_OT_writeSHM(bpy.types.Operator):
                 N = N + 1
                 ob.select = True
                 matID = ob.data.polygons[0].material_index
-                mat = obj.data.materials[matID]
-                filename = mat.name + '.' + self.surfaceFileType 
+                mat = ob.data.materials[matID]
+                filename = mat.name + '.' + self.surfaceFileType
                 surffiles.append([filename,mat['minLevel'], mat['maxLevel'], mat['patchLayers'], mat['patchType']])
                 filenameandpath = os.path.join(pathtrisurface, filename)
                 if self.surfaceFileType == 'stl':
